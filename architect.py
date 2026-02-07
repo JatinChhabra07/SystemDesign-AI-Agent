@@ -5,7 +5,14 @@ def architect_agent(state:dict):
     llm = get_model()
 
     plan_title=state['plan'].title
-    research_data=state['messages'][-1].content
+    last_message=state['messages'][-1]
+
+    if hasattr(last_message, 'content'):
+        research_data = last_message.content
+    elif isinstance(last_message, dict):
+        research_data = last_message.get('content', str(last_message))
+    else:
+        research_data = str(last_message)
 
     system_prompt = """
         You are a Principal System Architect with 15+ years of experience designing

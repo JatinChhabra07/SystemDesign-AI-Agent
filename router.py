@@ -25,7 +25,7 @@ def routing_logic(state):
 
     if role == "Research":
         return "researcher"
-    elif role in ["Design", "Execution"]:
+    elif role in ["Design", "Execution", "Validation"]:
         return "architect"
     
     return END
