@@ -5,6 +5,7 @@ from planner import planner_agent
 from researcher import research_agent
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
+from architect import architect_agent
 
 
 load_dotenv()
