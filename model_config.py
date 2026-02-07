@@ -8,7 +8,7 @@ def get_model():
     provider = os.getenv("MODEL_PROVIDER","groq")
     if provider=="groq":
         return ChatGroq(
-            model="llama-3.3-70b",
+            model="llama-3.3-70b-versatile",
             api_key=os.getenv("GROQ_API_KEY")
         )
     else:

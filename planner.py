@@ -1,8 +1,11 @@
 import os
 from model_config import get_model
 from schema import SystemDesignPlan
+from dotenv import load_dotenv
 
-def get_planner_grade(state):
+load_dotenv()
+
+def planner_agent(state):
     llm=get_model()
 
     structured_llm=llm.with_structured_output(SystemDesignPlan)
@@ -39,7 +42,18 @@ def get_planner_grade(state):
     - Ensure the final plan is easy for other agents to execute
     """
 
-    user_query=state["messages"][-1].content
+    last_message=state["messages"][-1].content
+
+    if hasattr(last_message, 'content'):
+        user_query = last_message.content
+    # Check if it's a dictionary (has .get)
+    elif isinstance(last_message, dict):
+        user_query = last_message.get('content', str(last_message))
+    # Otherwise, treat it as a string
+    else:
+        user_query = str(last_message)
+
+
     plan = structured_llm.invoke(
         [
             {"role":"system", "content":system_prompt},
@@ -47,4 +61,8 @@ def get_planner_grade(state):
         ]
     )
     
-    return {"plan":plan, "message":[{"role":"assistant", "content": f"Plan created: {plan.title}"}]}
+    return {
+        "plan": plan, 
+        "current_step": 0,
+        "messages": [{"role": "assistant", "content": f"Planner has outlined: {plan.title}"}]
+    }

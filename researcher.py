@@ -1,10 +1,12 @@
 from langchain_community.tools.tavily_search import TavilySearchResults
-from model_config import get_model
+from dotenv import load_dotenv
+load_dotenv()
+
 
 search_tool= TavilySearchResults(max_results=3)
 
 def research_agent(state):
-    """Fetches technical documentation and system design patterns."""
+    """Executes the research step of the plan."""
 
     query = state["plan"].steps[state["current_step"]].task_description
 
