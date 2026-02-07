@@ -1,19 +1,31 @@
+from langgraph.graph import END
 
 def routing_logic(state):
     """
-    Decides: 
-    1. Do we need more research? 
-    2. Is the design ready for validation?
-    3. Did the validator fail the design (Self-Healing)?
+    1. Handles Self-Healing (if score is low)
+    2. Routes to the correct Agent based on the Plan
+    3. Ends the process when steps are done
     """
-    
-    # Self-Healing Logic: If the Validator gave a low score
+    plan = state["plan"]
+    step_idx = state["current_step"]
+
+    # 1. Self-Healing: If the Validator (we'll add this next) fails the design
     if state.get("eval_score", 10) < 7:
         print("--- ROUTING: RE-EXECUTING DUE TO LOW SCORE ---")
-        return "execution_agent" # Send back to fix it
-        
-    # Flow Logic: Check if there are more steps in the plan
-    if state["current_step"] < state["plan"].total_steps:
-        return "research_agent"
-        
-    return "reporter_agent"
+        return "architect" # Send back to fix it
+
+    # 2. End of Plan: If no more steps, go to the Reporter or End
+    if step_idx >= len(plan.steps):
+        print("--- ROUTING: PLAN COMPLETE ---")
+        return END
+
+    # 3. Dynamic Routing: Look at the next step's role in the plan
+    next_step = plan.steps[step_idx]
+    role = next_step.agent_role
+
+    if role == "Research":
+        return "researcher"
+    elif role in ["Design", "Execution"]:
+        return "architect"
+    
+    return END
