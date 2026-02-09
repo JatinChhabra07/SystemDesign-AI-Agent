@@ -5,3 +5,6 @@ fastapi
 uvicorn 
 python-dotenv
 tavily-python
+streamlit
+streamlit-mermaid
+langchain-google-genai

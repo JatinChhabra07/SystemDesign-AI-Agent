@@ -74,6 +74,6 @@ def architect_agent(state:dict):
     )
 
     return{
-        "message": [{"role":"assistant", "content":response.content}],
+        "messages": [{"role":"assistant", "content":response.content}],
         "current_step": state["current_step"] +1
     }
