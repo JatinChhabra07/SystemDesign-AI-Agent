@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
-from backend.src.core.graph import app as agent_graph
+from src.core.graph import app as agent_graph
 import uvicorn
 from src.utils.vector_store import ingest_docs
 import shutil

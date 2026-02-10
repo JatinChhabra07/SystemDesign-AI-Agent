@@ -1,12 +1,12 @@
 from langgraph.graph import StateGraph,END
-from backend.src.schema import AgentState
-from backend.src.agents.planner import planner_agent
-from backend.src.agents.researcher import research_agent
+from src.schema import AgentState
+from src.agents.planner import planner_agent
+from src.agents.researcher import research_agent
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
-from backend.src.agents.architect import architect_agent
-from backend.src.core.router import routing_logic
-from backend.src.agents.validator import validator_agent
+from src.agents.architect import architect_agent
+from src.core.router import routing_logic
+from src.agents.validator import validator_agent
 
 
 load_dotenv()

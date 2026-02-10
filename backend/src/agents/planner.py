@@ -1,6 +1,6 @@
 import os
-from backend.src.utils.model_config import get_model
-from backend.src.schema import SystemDesignPlan
+from src.utils.model_config import get_model
+from src.schema import SystemDesignPlan
 from dotenv import load_dotenv
 
 load_dotenv()
