@@ -1,4 +1,4 @@
-from model_config import get_model
+from backend.src.utils.model_config import get_model
 
 
 def validator_agent(state:dict):

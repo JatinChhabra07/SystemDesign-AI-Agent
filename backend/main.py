@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
-from app import app as agent_graph
+from backend.src.core.graph import app as agent_graph
 import uvicorn
 
 app = FastAPI(title="System Design AI Agent Service")

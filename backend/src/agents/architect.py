@@ -1,5 +1,5 @@
-from model_config import get_model
-from utils import sanitize_mermaid
+from backend.src.utils.model_config import get_model
+from backend.src.utils.utils import sanitize_mermaid
 import re
 
 def architect_agent(state:dict):
