@@ -1,4 +1,6 @@
 from model_config import get_model
+from utils import sanitize_mermaid
+import re
 
 def architect_agent(state:dict):
     """Drafts the technical architecture based on research."""
@@ -93,7 +95,19 @@ def architect_agent(state:dict):
         ]
     )
 
+    raw_content = response.content
+
+    # Extract just the mermaid block
+    mermaid_match = re.search(r"```mermaid\s+(.*?)\s+```", raw_content, re.DOTALL)
+
+    if mermaid_match:
+        clean_mermaid = sanitize_mermaid(mermaid_match.group(1))
+
+        final_content = raw_content.replace(mermaid_match.group(1), clean_mermaid)
+    else:
+        final_content = raw_content
+
     return{
-        "messages": [{"role":"assistant", "content":response.content}],
+        "messages": [{"role":"assistant", "content":final_content}],
         "current_step": state["current_step"] +1
     }
