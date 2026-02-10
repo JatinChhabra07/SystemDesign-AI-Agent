@@ -50,6 +50,26 @@ def architect_agent(state:dict):
         - Internal service communication
         - External dependencies
 
+        CRITICAL INSTRUCTION: You must include a Mermaid.js diagram and follow these rules strictly:
+
+        1. Start the code block with 'graph LR' or 'graph TD'.
+        2. ALL node labels with special characters (spaces, (), &, /) MUST be double-quoted.
+        Example: A["Database (Postgres)"]
+        3. Avoid using illegal characters like <, >, or & unless escaped.
+        4. Use standard arrows only:
+        --> for solid arrows
+        -.-> for dotted arrows
+        5. Keep the diagram simple and clean.
+
+        Wrap the final Mermaid code EXACTLY like this:
+
+        ```mermaid
+        graph LR
+        A["Client"] --> B["API Gateway"]
+        B --> C["Microservices"]
+
+
+
         6. Use clear headings and bullet points.
         Keep the explanation concise but technically rigorous.
 
