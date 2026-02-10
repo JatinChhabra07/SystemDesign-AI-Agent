@@ -1,11 +1,28 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
 from backend.src.core.graph import app as agent_graph
 import uvicorn
+from src.utils.vector_store import ingest_docs
+import shutil
+import os
 
 app = FastAPI(title="System Design AI Agent Service")
+
+os.makedirs("backend/data", exist_ok=True)
+
+@app.post("/ingest")
+async def ingest_file(file: UploadFile=File(...)):
+    temp_path = f"backend/data/{file.filename}"
+    with open(temp_path,"wb") as buffer:
+        shutil.copyfileobj(file.file,   buffer)
+
+    try:
+        ingest_docs(temp_path)
+        return {"status": "success", "message": f"Indexed {file.filename}"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 class QueryRequest(BaseModel):
     query: str
@@ -49,6 +66,8 @@ async def generate_design(request: QueryRequest):
                 "title": "Rate Limit Hit"
             }
         raise HTTPException(status_code=500, detail=str(e))
+    
+
     
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
