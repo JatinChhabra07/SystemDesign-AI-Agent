@@ -9,7 +9,7 @@ def get_model():
     """Returns the primary model, or a fallback if the primary is down."""
     try:
         return ChatGroq(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-8b-instant",
             api_key=os.getenv("GROQ_API_KEY"),
             temperature=0,
         )

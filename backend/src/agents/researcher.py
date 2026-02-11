@@ -9,7 +9,7 @@ def research_agent(state):
     """Executes the research step of the plan, checking local PDFs first to save costs."""
 
     embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
-    vectorstore = Chroma(persist_directory="backend/data/chroma_db", embedding_function=embeddings)
+    vectorstore = Chroma(persist_directory="data/chroma_db", embedding_function=embeddings)
 
     query = state["plan"].steps[state["current_step"]].task_description
     local_docs = vectorstore.similarity_search(query, k=2)

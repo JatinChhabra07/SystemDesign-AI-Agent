@@ -54,22 +54,23 @@ def architect_agent(state:dict):
 
         CRITICAL INSTRUCTION: You must include a Mermaid.js diagram and follow these rules strictly:
 
-        1. Start the code block with 'graph LR' or 'graph TD'.
-        2. ALL node labels with special characters (spaces, (), &, /) MUST be double-quoted.
-        Example: A["Database (Postgres)"]
-        3. Avoid using illegal characters like <, >, or & unless escaped.
-        4. Use standard arrows only:
+        1. Start the code block STRICTLY with 'graph TD'. 
+        2. ALL node labels MUST be wrapped in double quotes to prevent syntax errors. 
+        Example: A["Load Balancer"]
+        3. NEVER use nested double quotes like ""Label"". Use exactly one set of quotes.
+        4. Avoid special characters like (), &, or / inside labels. If necessary, use hyphens instead.
+        Example: D["Market Data Service - Kafka"]
+        5. Use standard arrows only:
         --> for solid arrows
         -.-> for dotted arrows
-        5. Keep the diagram simple and clean.
+        6. Each connection MUST be on its own new line.
 
         Wrap the final Mermaid code EXACTLY like this:
 
         ```mermaid
-        graph LR
+        graph TD
         A["Client"] --> B["API Gateway"]
         B --> C["Microservices"]
-
 
 
         6. Use clear headings and bullet points.
@@ -98,7 +99,7 @@ def architect_agent(state:dict):
     raw_content = response.content
 
     # Extract just the mermaid block
-    mermaid_match = re.search(r"```mermaid\s+(.*?)\s+```", raw_content, re.DOTALL)
+    mermaid_match = re.search(r"```mermaid\s*(.*?)\s*```", raw_content, re.DOTALL | re.IGNORECASE)
 
     if mermaid_match:
         clean_mermaid = sanitize_mermaid(mermaid_match.group(1))

@@ -7,6 +7,7 @@ import uvicorn
 from src.utils.vector_store import ingest_docs
 import shutil
 import os
+import traceback
 
 app = FastAPI(title="System Design AI Agent Service")
 
@@ -14,7 +15,7 @@ os.makedirs("backend/data/", exist_ok=True)
 
 @app.post("/ingest")
 async def ingest_file(file: UploadFile=File(...)):
-    temp_path = f"backend/data/{file.filename}"
+    temp_path = f"data/{file.filename}"
     with open(temp_path,"wb") as buffer:
         shutil.copyfileobj(file.file,   buffer)
 
@@ -31,6 +32,7 @@ class QueryRequest(BaseModel):
 @app.post("/design")
 async def generate_design(request: QueryRequest):
     try:
+        print(f"DEBUG: Received request for {request.query}")
         inputs = {"messages": [HumanMessage(content=request.query)]}
         config = {"configurable": {"thread_id": request.thread_id}}
         
@@ -59,12 +61,11 @@ async def generate_design(request: QueryRequest):
             "steps_completed": result.get("current_step", 0)
         }
     except Exception as e:
-        if "rate_limit_exceeded" in str(e).lower():
-            return {
-                "status": "error",
-                "report": "🚨 Rate limit reached! Please wait a minute or switch to fallback model.",
-                "title": "Rate Limit Hit"
-            }
+        print("\n" + "="*50)
+        print("CRITICAL ERROR IN BACKEND:")
+        traceback.print_exc() 
+        print("="*50 + "\n")
+        
         raise HTTPException(status_code=500, detail=str(e))
     
 

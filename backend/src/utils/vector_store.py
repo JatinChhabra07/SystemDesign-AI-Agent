@@ -4,8 +4,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 
-DATA_PATH = "backend/data/"
-DB_PATH = "backend/data/chroma_db"
+# DATA_PATH = "backend/data/"
+DB_PATH = "data/chroma_db"
 
 
 def ingest_docs(file_path:str):

@@ -10,13 +10,12 @@ def sanitize_mermaid(code: str) -> str:
     def quote_labels(match):
         node_id = match.group(1)
         bracket_type = match.group(2)
-        content=match.group(3)
+        content=match.group(3).strip()
         end_bracket = match.group(4)
 
-        if content.startswith('"') and content.endswith('"'):
-            return f"{node_id}{bracket_type}{content}{end_bracket}"
+        clean_content = content.replace('"', '').strip()
         
-        return f'{node_id}{bracket_type}"{content}"{end_bracket}'
+        return f'{node_id}{bracket_type}"{clean_content}"{end_bracket}'
     
     code = re.sub(r'(\w+)(\[|\(|\{)(.*?)(\]|\)|\})', quote_labels, code)
 

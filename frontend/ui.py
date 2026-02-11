@@ -27,6 +27,20 @@ st.markdown(
     .sidebar .sidebar-content {
         background-color: #f0f2f6;
     }
+    
+    /* --- NEW: MERMAID DIAGRAM OPTIMIZATION --- */
+    /* Target the Mermaid SVG specifically to force a readable size */
+    svg[id^="mermaid-"] {
+        max-width: none !important; /* Allow the diagram to be wider than the page */
+        width: 1200px !important;   /* Force a large width */
+        height: auto !important;
+    }
+    
+    /* Optional: Add a scrollbar if the diagram exceeds column width */
+    div.stHtml {
+        overflow-x: auto !important;
+        padding-bottom: 20px;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -92,7 +106,7 @@ if st.button("Generate Architecture"):
                         "query": user_input,
                         "thread_id": "session_1"
                     },
-                    timeout=150 # Increased timeout for RAG + Research
+                    timeout=300 
                 )
 
                 # Success Handling
@@ -105,7 +119,7 @@ if st.button("Generate Architecture"):
                     st.success(f"✅ Successfully generated: {title}")
 
                     # 50/50 Layout for Specs and Visuals
-                    col1, col2 = st.columns([1, 1])
+                    col1, col2 = st.columns([0.3, 0.7])
 
                     with col2:
                         st.subheader("📊 Architecture Visual")
@@ -119,12 +133,16 @@ if st.button("Generate Architecture"):
 
                         if mermaid_match:
                             mermaid_code = mermaid_match.group(1).strip()
+
+                            with st.expander("🔍 Debug: See Raw Mermaid Code"):
+                                st.code(mermaid_code, language="mermaid")
+
                             # Strip leading 'mermaid' text if LLM included it inside backticks
-                            if mermaid_code.startswith("mermaid"):
+                            if mermaid_code.lower().startswith("mermaid"):
                                 mermaid_code = mermaid_code.replace("mermaid", "", 1).strip()
 
                             # Render the Interactive Diagram
-                            st_mermaid(mermaid_code, key="mermaid_chart")
+                            st_mermaid(mermaid_code, height=600,key="mermaid_chart")
                         else:
                             st.info("ℹ️ No visual diagram found. The technical specs may still be valid.")
                             

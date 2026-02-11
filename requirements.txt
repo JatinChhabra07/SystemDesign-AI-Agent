@@ -1,6 +1,4 @@
 langgraph 
-langchain-groq 
-langchain-community 
 fastapi 
 uvicorn 
 python-dotenv
@@ -9,6 +7,10 @@ streamlit
 streamlit-mermaid
 langchain-google-genai
 langchain-chroma 
-langchain-community 
 pypdf
 sentence-transformers
+langchain
+langchain-core
+langchain-community
+langchain-groq
+langchain-huggingface
