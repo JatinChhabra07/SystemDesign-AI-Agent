@@ -10,7 +10,7 @@ import os
 
 app = FastAPI(title="System Design AI Agent Service")
 
-os.makedirs("backend/data", exist_ok=True)
+os.makedirs("backend/data/", exist_ok=True)
 
 @app.post("/ingest")
 async def ingest_file(file: UploadFile=File(...)):
