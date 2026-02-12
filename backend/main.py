@@ -2,14 +2,37 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
-from src.core.graph import app as agent_graph
+from src.core.graph import get_app
 import uvicorn
 from src.utils.vector_store import ingest_docs
 import shutil
 import os
 import traceback
+from src.core.graph import get_app
+from contextlib import asynccontextmanager
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from src.core.graph import workflow
 
-app = FastAPI(title="System Design AI Agent Service")
+
+# Global variables to hold the app and the context manager
+agent_app = None
+_saver_context = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global agent_app, _saver_context
+    # 1. Start the connection when the server starts
+    _saver_context = AsyncSqliteSaver.from_conn_string("data/checkpoints.sqlite")
+    memory = await _saver_context.__aenter__() 
+    
+    # 2. Compile the graph with the active memory instance
+    agent_app = workflow.compile(checkpointer=memory)
+    yield
+    # 3. Close the connection when the server stops
+    await _saver_context.__aexit__(None, None, None)
+
+app = FastAPI(lifespan=lifespan)
 
 os.makedirs("backend/data/", exist_ok=True)
 
@@ -37,7 +60,7 @@ async def generate_design(request: QueryRequest):
         config = {"configurable": {"thread_id": request.thread_id}}
         
         #using ainvoke for FastAPI (asynchronous)
-        result = await agent_graph.ainvoke(inputs, config)
+        result = await agent_app.ainvoke(inputs, config=config)
         
         # 2. Extract final message safely
         last_message = result["messages"][-1]

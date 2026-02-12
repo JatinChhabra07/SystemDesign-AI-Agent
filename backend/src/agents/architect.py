@@ -7,14 +7,16 @@ def architect_agent(state:dict):
     llm = get_model()
 
     plan_title=state['plan'].title
-    last_message=state['messages'][-1]
 
-    if hasattr(last_message, 'content'):
-        research_data = last_message.content
-    elif isinstance(last_message, dict):
-        research_data = last_message.get('content', str(last_message))
-    else:
-        research_data = str(last_message)
+    history = state.get("messages", [])[-4:]
+
+
+
+    # Identify the latest research content
+    last_message = history[-1] if history else ""
+    research_data = last_message.content if hasattr(last_message, 'content') else str(last_message)
+    # Truncate research data further to be safe
+    research_data = research_data[:1500]
 
     system_prompt = """
         You are a Principal System Architect with 15+ years of experience designing
@@ -89,26 +91,27 @@ def architect_agent(state:dict):
         - Mermaid Diagram
         - Final Recommendations
     """
-    response = llm.invoke(
-        [
-            {"role":"system", "content": system_prompt},
-            {"role": "user", "content":f"Project: {plan_title}\nResearch: {research_data}"}
-        ]
-    )
+    messages_to_send = [{"role": "system", "content": system_prompt}]
+    messages_to_send.extend(history)
+    messages_to_send.append({
+        "role": "user", 
+        "content": f"Update the architecture for Project: {plan_title} using this new research: {research_data}"
+    })
 
+    response = llm.invoke(messages_to_send)
     raw_content = response.content
 
-    # Extract just the mermaid block
+    # 3. Extract and sanitize the mermaid block
     mermaid_match = re.search(r"```mermaid\s*(.*?)\s*```", raw_content, re.DOTALL | re.IGNORECASE)
 
     if mermaid_match:
         clean_mermaid = sanitize_mermaid(mermaid_match.group(1))
-
+        
         final_content = raw_content.replace(mermaid_match.group(1), clean_mermaid)
     else:
         final_content = raw_content
 
-    return{
-        "messages": [{"role":"assistant", "content":final_content}],
-        "current_step": state["current_step"] +1
+    return {
+        "messages": [{"role": "assistant", "content": final_content}],
+        "current_step": state["current_step"] + 1
     }
