@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  # Backend FastAPI Service
+  backend:
+    build: ./backend
+    container_name: system-design-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/data:/app/data  # Persists your SQLite DB and ChromaDB
+    networks:
+      - design-network
+
+  # Frontend Streamlit Service
+  frontend:
+    build: ./frontend
+    container_name: system-design-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - BACKEND_URL=http://backend:8000/design
+    depends_on:
+      - backend
+    networks:
+      - design-network
+
+networks:
+  design-network:
+    driver: bridge

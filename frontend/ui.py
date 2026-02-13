@@ -98,15 +98,19 @@ if st.button("Generate Architecture"):
     else:
         with st.spinner("🚀 Agents are collaborating (Researching → Designing → Validating)..."):
 
+            if "thread_id" not in st.session_state:
+                import uuid
+                st.session_state.thread_id = str(uuid.uuid4())
+
             try:
-                # Backend API Call
+                # 2. Use the session_state variable in the request
                 response = requests.post(
                     "http://localhost:8000/design",
                     json={
                         "query": user_input,
-                        "thread_id": "session_1"
+                        "thread_id": st.session_state.thread_id 
                     },
-                    timeout=300 
+                    timeout=500 
                 )
 
                 # Success Handling
