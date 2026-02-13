@@ -8,7 +8,7 @@ def architect_agent(state:dict):
 
     plan_title=state['plan'].title
 
-    history = state.get("messages", [])[-4:]
+    history = state.get("messages", [])[-2:]
 
 
 
@@ -16,7 +16,7 @@ def architect_agent(state:dict):
     last_message = history[-1] if history else ""
     research_data = last_message.content if hasattr(last_message, 'content') else str(last_message)
     # Truncate research data further to be safe
-    research_data = research_data[:1500]
+    truncated_research = str(research_data)[:1500]
 
     system_prompt = """
         You are a Principal System Architect with 15+ years of experience designing
@@ -95,7 +95,7 @@ def architect_agent(state:dict):
     messages_to_send.extend(history)
     messages_to_send.append({
         "role": "user", 
-        "content": f"Update the architecture for Project: {plan_title} using this new research: {research_data}"
+        "content": f"Update the architecture for Project: {plan_title} using this new research: {truncated_research}"
     })
 
     response = llm.invoke(messages_to_send)

@@ -2,7 +2,6 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
-from src.core.graph import get_app
 import uvicorn
 from src.utils.vector_store import ingest_docs
 import shutil
@@ -12,6 +11,7 @@ from src.core.graph import get_app
 from contextlib import asynccontextmanager
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from src.core.graph import workflow
+from fastapi.responses import StreamingResponse
 
 
 # Global variables to hold the app and the context manager
@@ -54,18 +54,24 @@ class QueryRequest(BaseModel):
 
 @app.post("/design")
 async def generate_design(request: QueryRequest):
+    # agent_app = await get_app()
+    
     try:
-        print(f"DEBUG: Received request for {request.query}")
+        print(f"DEBUG: Starting request for {request.query}")
+        
         inputs = {"messages": [HumanMessage(content=request.query)]}
         config = {"configurable": {"thread_id": request.thread_id}}
         
-        #using ainvoke for FastAPI (asynchronous)
-        result = await agent_app.ainvoke(inputs, config=config)
-        
-        # 2. Extract final message safely
+        result = None
+        async for chunk in agent_app.astream(inputs, config=config, stream_mode="values"):
+            result = chunk
+            print("DEBUG: Processing graph step...")
+
+        if not result:
+            raise HTTPException(status_code=500, detail="Graph failed to produce a result")
+
         last_message = result["messages"][-1]
         
-        # Check if it's a message object or a dict/string
         if hasattr(last_message, 'content'):
             final_report = last_message.content
         elif isinstance(last_message, dict):
@@ -83,14 +89,13 @@ async def generate_design(request: QueryRequest):
             "report": final_report,
             "steps_completed": result.get("current_step", 0)
         }
+
     except Exception as e:
         print("\n" + "="*50)
         print("CRITICAL ERROR IN BACKEND:")
         traceback.print_exc() 
         print("="*50 + "\n")
-        
         raise HTTPException(status_code=500, detail=str(e))
-    
 
     
 if __name__ == "__main__":

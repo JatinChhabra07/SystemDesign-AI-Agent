@@ -47,15 +47,13 @@ for node in node_list:
 
 # ASYNC COMPATIBILITY: Wrap compilation in a helper function
 async def get_app():
-    """
-    Properly handles the Async Context Manager for the checkpointer.
-    """
-    # 1. Initialize the async context manager
-    checkpointer_context = AsyncSqliteSaver.from_conn_string("data/checkpoints.sqlite")
+    # Connection string with fast memory mode
+    memory = AsyncSqliteSaver.from_conn_string("data/checkpoints.sqlite")
     
-    memory = await checkpointer_context.__aenter__()
-    
-    # 3. Compile and return
+    async with memory as saver:
+        await saver.conn.execute("PRAGMA journal_mode=WAL;") 
+        await saver.conn.execute("PRAGMA synchronous=NORMAL;")
+        
     return workflow.compile(checkpointer=memory)
 
 if __name__ == "__main__":

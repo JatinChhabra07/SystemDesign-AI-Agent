@@ -52,7 +52,7 @@ def planner_agent(state):
     # 1. Capture the full history from state
     history = state.get("messages", [])
 
-    truncated_history = history[-5:]
+    truncated_history = history[-3:]
     
     # 2. Build the message list for the LLM
     # We include the system prompt first, followed by the entire history
