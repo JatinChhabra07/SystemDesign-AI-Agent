@@ -3,29 +3,39 @@ version: '3.8'
 services:
   # Backend FastAPI Service
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: system-design-backend
+    restart: always  # Auto-restart on crash
     ports:
       - "8000:8000"
     env_file:
       - ./backend/.env
     volumes:
-      - ./backend/data:/app/data  # Persists your SQLite DB and ChromaDB
+      - backend_data:/app/data  # Named volume for better persistence
     networks:
       - design-network
 
   # Frontend Streamlit Service
   frontend:
-    build: ./frontend
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: system-design-frontend
+    restart: always
     ports:
       - "8501:8501"
     environment:
-      - BACKEND_URL=http://backend:8000/design
+      - BACKEND_URL=http://backend:8000/design  # Uses internal Docker DNS
     depends_on:
       - backend
     networks:
       - design-network
+
+# Use named volumes to ensure SQLite and ChromaDB data survive container updates
+volumes:
+  backend_data:
 
 networks:
   design-network:

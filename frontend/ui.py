@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 from streamlit_mermaid import st_mermaid
 import re
+import os
 
 # Page Config
 st.set_page_config(
@@ -9,6 +10,8 @@ st.set_page_config(
     page_icon="🏗️",
     layout="wide"
 )
+
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000/design")
 
 # Custom Styling
 st.markdown(
@@ -113,7 +116,7 @@ if st.button("Generate Architecture"):
             try:
                 # 2. Use the session_state variable in the request
                 response = requests.post(
-                    "http://localhost:8000/design",
+                    BACKEND_URL,
                     json={
                         "query": user_input,
                         "thread_id": st.session_state.thread_id 
