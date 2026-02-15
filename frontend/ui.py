@@ -48,6 +48,13 @@ st.markdown(
 
 # --- SIDEBAR: RAG KNOWLEDGE BASE & STATUS ---
 with st.sidebar:
+    st.title("⚙️ Settings")
+    user_api_key = st.text_input("Enter Groq API Key", type="password", help="Get your key at console.groq.com")
+    
+    if not user_api_key:
+        st.warning("⚠️ Please provide an API key to enable agents.")
+
+    st.divider()
     st.title("📚 Knowledge Base")
     st.markdown("Upload PDFs to provide context and **reduce API costs** by using local data first.")
     
@@ -92,9 +99,10 @@ user_input = st.text_input(
 # Main Execution Button
 if st.button("Generate Architecture"):
 
-    if not user_input:
+    if not user_api_key:
+        st.error("Please enter your Groq API Key in the sidebar first!")
+    elif not user_input:
         st.warning("Please enter a system idea first!")
-
     else:
         with st.spinner("🚀 Agents are collaborating (Researching → Designing → Validating)..."):
 
@@ -110,6 +118,7 @@ if st.button("Generate Architecture"):
                         "query": user_input,
                         "thread_id": st.session_state.thread_id 
                     },
+                    headers={"X-Groq-API-Key": user_api_key},
                     timeout=500 
                 )
 
