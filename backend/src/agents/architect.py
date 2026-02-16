@@ -2,44 +2,74 @@ from src.utils.model_config import get_model
 from src.utils.utils import sanitize_mermaid
 import re
 
-def architect_agent(state:dict):
-    """Drafts the technical architecture based on research."""
+
+def architect_agent(state: dict):
+    """
+    Drafts and evolves the technical architecture based on research
+    and previous system designs.
+    """
+
     llm = get_model()
 
-    plan_title=state['plan'].title
+    plan_title = state["plan"].title if "plan" in state else "System Architecture"
 
-    history = state.get("messages", [])[-2:]
+    messages = state.get("messages", [])
 
 
+    full_history_text = ""
+    for m in messages:
+        m_content = m.get("content", "") if isinstance(m, dict) else getattr(m, "content", "")
+        if "```mermaid" in m_content:
+            full_history_text = m_content
 
-    # Identify the latest research content
+
+    history = messages[-2:] if len(messages) >= 2 else messages
+
     last_message = history[-1] if history else ""
-    research_data = last_message.content if hasattr(last_message, 'content') else str(last_message)
-    # Truncate research data further to be safe
+
+    if isinstance(last_message, dict):
+        research_data = last_message.get("content", "")
+    else:
+        research_data = getattr(last_message, "content", str(last_message))
+
     truncated_research = str(research_data)[:1500]
 
-    system_prompt = """
-        You are a Principal System Architect with 15+ years of real-world experience 
+    truncated_previous = str(full_history_text)[:1000]
+
+
+    system_prompt = f"""
+        You are a Principal System Architect with 15+ years of real-world experience
         in designing scalable, reliable, and cost-efficient software systems.
 
-        Your task is to analyze the user's requirements and design a PRACTICAL,
-        REALISTIC, and WELL-JUSTIFIED system architecture.
+        PREVIOUS DESIGN (if any):
+        {truncated_previous}
+
+        NEW RESEARCH:
+        {truncated_research}
+
+        TASK:
+        You MUST provide the COMPLETE, UPDATED system architecture.
+
+        If a previous design exists:
+        - Preserve all valid components
+        - Integrate new features cleanly
+        - Refactor when needed
+        - Do NOT remove working parts without justification
 
         Your goal is NOT to impress with complexity.
-        Your goal is to build the RIGHT system for the given use case.
+        Your goal is to build the RIGHT system for the use case.
 
         --------------------------------------------------
         CORE PRINCIPLES (MANDATORY):
 
-        1. Avoid generic templates and boilerplate designs.
-        2. Include ONLY components that are technically justified.
-        3. Prefer simple architectures when scale is small or medium.
-        4. Introduce advanced components (CDN, Load Balancer, Cache, Queue, Microservices)
-        ONLY when they solve a clear, stated problem.
+        1. Avoid generic templates.
+        2. Include ONLY justified components.
+        3. Prefer simplicity when possible.
+        4. Introduce advanced infra ONLY if needed.
         5. For every major component:
-        - Explain WHY it is included
-        - Explain WHY alternatives were rejected
-        6. If a common component is NOT used, explicitly justify its omission.
+        - Explain WHY chosen
+        - Explain WHY alternatives rejected
+        6. Justify omitted components.
         7. Optimize for:
         - Performance
         - Cost
@@ -50,83 +80,67 @@ def architect_agent(state:dict):
         --------------------------------------------------
         ANALYSIS REQUIREMENTS:
 
-        Before proposing the architecture, reason about:
+        Before proposing the architecture, analyze:
         - Expected traffic
         - Data volume
         - Read/write patterns
-        - Latency needs
-        - Availability requirements
-        - Budget sensitivity
-
-        Use these factors to guide all decisions.
+        - Latency
+        - Availability
+        - Budget
 
         --------------------------------------------------
-        OUTPUT FORMAT (STRICTLY FOLLOW):
+        OUTPUT FORMAT (STRICT):
 
         1. Title
         2. System Overview
-        - Use Case Summary
-        - Expected Scale (Small / Medium / Large)
-        - Target Users
-        - Key Constraints
-
         3. Architecture Design (With Justification)
-        - Frontend Layer
-        - Backend Layer
-        - Database Layer
-        - Caching / Messaging (if applicable)
-        - Infrastructure Layer
-        For each component:
-        - Purpose
-        - Reason for Selection
-
         4. Data Management Strategy
-        - SQL vs NoSQL decision
-        - Schema design approach
-        - Indexing strategy
-        - Backup & recovery plan
-
-        5. Mermaid Architecture Diagram
-        - Provide a clean, readable diagram
-        - Wrap inside ```mermaid ``` blocks
-
+        5. Mermaid Architecture Diagram (REQUIRED)
         6. Trade-offs & Limitations
-        - Performance trade-offs
-        - Cost trade-offs
-        - Technical risks
-        - Future scaling challenges
-
         7. Growth & Evolution Plan
-        - How the system evolves at 10x scale
-        - When to migrate to microservices
-        - Future optimization points
-
-        CRITICAL FORMATTING RULE:
-        You MUST provide exactly ONE Mermaid diagram wrapped in ```mermaid and ``` blocks.
-        Do not add text, explanations, or comments inside the backticks.
-        If you do not include the diagram, the system will fail.
-        
-        Ensure the first line inside the block is 'graph TD' or 'graph LR'.
 
         --------------------------------------------------
+        MERMAID RULES (CRITICAL):
+
+        - Provide EXACTLY ONE Mermaid diagram
+        - Wrap inside ```mermaid ``` blocks
+        - First line MUST be: graph TD or graph LR
+        - Must represent the FULL integrated system
+        - No comments inside diagram
+        - No extra diagrams
+
+        If diagram is missing → system fails.
+
+        --------------------------------------------------
+
+        STRICT TECHNICAL CONSTRAINTS:
+        1. If the user specifies a technology (e.g., PostgreSQL, Flink), you MUST use it.
+        2. Do NOT use generic alternatives like Neptune or Glue if specific tools are requested.
+        3. Architecture MUST be integrated. Show how User Profiles and Tracking data flow into the SAME database.
+        4. Mermaid diagrams must be CONNECTED (Graph TD). No isolated blocks.
+
+
         QUALITY RULES:
 
-        - Be concise but technically precise
-        - No vague statements
-        - No marketing language
-        - No unnecessary buzzwords
-        - Prefer concrete examples
-        - Assume the reader is a technical interviewer
+        - No vague language
+        - No buzzwords
+        - No marketing tone
+        - Interview-level clarity
+        - Engineering-first thinking
 
-        Always prioritize clarity, realism, and engineering correctness.
-"""
-
+        Always prioritize realism and correctness.
+    """
     messages_to_send = [{"role": "system", "content": system_prompt}]
     messages_to_send.extend(history)
+
+    feedback = ""
+    if "Validation Feedback" in str(history):
+        feedback = f"\n\nPREVIOUS FEEDBACK: Your last design was rejected. Fix the following: {research_data}"
+
     messages_to_send.append({
-        "role": "user", 
-        "content": f"Update the architecture for Project: {plan_title} using this new research: {truncated_research}"
-    })
+    "role": "user", 
+    "content": f"Update the architecture for Project: {plan_title}. {feedback} Research: {truncated_research}"
+})
 
     response = llm.invoke(messages_to_send)
     raw_content = response.content
@@ -136,10 +150,9 @@ def architect_agent(state:dict):
         fix_prompt = "Your previous response was missing the Mermaid diagram. Please provide ONLY the Mermaid code block starting with 'graph TD' or 'graph LR' wrapped in ```mermaid blocks."
         retry_response = llm.invoke(raw_content + "\n\n" + fix_prompt)
         
-        # Append the fix to the original report
         raw_content += "\n\n### Architecture Visual Update\n" + retry_response.content
 
-    # 3. Extract and sanitize the mermaid block
+    # Extract and sanitize the mermaid block
     mermaid_match = re.search(r"```mermaid\s*(.*?)\s*```", raw_content, re.DOTALL | re.IGNORECASE)
 
     if mermaid_match:

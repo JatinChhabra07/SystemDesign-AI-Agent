@@ -22,19 +22,15 @@ _saver_context = None
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global agent_app, _saver_context
-    # 1. Start the connection when the server starts
     _saver_context = AsyncSqliteSaver.from_conn_string("data/checkpoints.sqlite")
     memory = await _saver_context.__aenter__() 
     
-    # 2. Compile the graph with the active memory instance
     agent_app = workflow.compile(checkpointer=memory)
     yield
-    # 3. Close the connection when the server stops
     await _saver_context.__aexit__(None, None, None)
 
 app = FastAPI(lifespan=lifespan)
 
-os.makedirs("backend/data/", exist_ok=True)
 
 @app.post("/ingest")
 async def ingest_file(file: UploadFile=File(...)):
@@ -54,34 +50,78 @@ class QueryRequest(BaseModel):
 
 @app.post("/design")
 async def generate_design(request: QueryRequest):
-    # agent_app = await get_app()
-    
+
     try:
         print(f"DEBUG: Starting request for {request.query}")
-        
-        inputs = {"messages": [HumanMessage(content=request.query)]}
-        config = {"configurable": {"thread_id": request.thread_id}}
-        
+
+        inputs = {
+            "messages": [HumanMessage(content=request.query)]
+        }
+
+        config = {
+            "configurable": {
+                "thread_id": request.thread_id
+            }
+        }
+
         result = None
-        async for chunk in agent_app.astream(inputs, config=config, stream_mode="values"):
+
+        async for chunk in agent_app.astream(
+            inputs,
+            config=config,
+            stream_mode="values"
+        ):
             result = chunk
             print("DEBUG: Processing graph step...")
 
         if not result:
-            raise HTTPException(status_code=500, detail="Graph failed to produce a result")
+            raise HTTPException(
+                status_code=500,
+                detail="Graph failed to produce a result"
+            )
 
-        last_message = result["messages"][-1]
-        
-        if hasattr(last_message, 'content'):
-            final_report = last_message.content
-        elif isinstance(last_message, dict):
-            final_report = last_message.get('content', str(last_message))
-        else:
-            final_report = str(last_message)
-        
+
+        messages = result.get("messages", [])
+
+        final_report = ""
+
+        # Reverse search: Prefer Architect output (with Mermaid / Structure)
+        for msg in reversed(messages):
+
+            if isinstance(msg, dict):
+                content = msg.get("content", "")
+            else:
+                content = getattr(msg, "content", "")
+
+            content_lower = content.lower()
+
+            if (
+                "```mermaid" in content_lower
+                or "architecture design" in content_lower
+                or "system overview" in content_lower
+            ):
+                final_report = content
+                break
+
+        if not final_report and messages:
+
+            last_msg = messages[-1]
+
+            if isinstance(last_msg, dict):
+                final_report = last_msg.get("content", "")
+            else:
+                final_report = getattr(
+                    last_msg,
+                    "content",
+                    str(last_msg)
+                )
+
+
         plan_title = "System Design Report"
+
         if result.get("plan"):
             plan_title = result["plan"].title
+
 
         return {
             "status": "success",
@@ -91,11 +131,17 @@ async def generate_design(request: QueryRequest):
         }
 
     except Exception as e:
-        print("\n" + "="*50)
+
+        print("\n" + "=" * 50)
         print("CRITICAL ERROR IN BACKEND:")
-        traceback.print_exc() 
-        print("="*50 + "\n")
-        raise HTTPException(status_code=500, detail=str(e))
+        traceback.print_exc()
+        print("=" * 50 + "\n")
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
 
     
 if __name__ == "__main__":

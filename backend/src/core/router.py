@@ -2,32 +2,54 @@ from langgraph.graph import END
 
 def routing_logic(state):
     """
-    1. Handles Self-Healing (if score is low)
-    2. Routes to the correct Agent based on the Plan
-    3. Ends the process when steps are done
+    Final Robust Router:
+    - Case-insensitive role mapping.
+    - Strict Loop Prevention (Max 2 retries).
+    - Intelligent State Progression.
     """
-    plan = state["plan"]
-    step_idx = state["current_step"]
+    plan = state.get("plan")
+    step_idx = state.get("current_step", 0)
+    eval_score = state.get("eval_score", 10)
+    messages = state.get("messages", [])
 
-    # 1. Self-Healing: If the Validator (we'll add this next) fails the design
-    if state.get("eval_score", 10) < 7:
-        print(f"--- SELF-HEALING: Score {state['eval_score']} is too low. Retrying... ---")
-        return "architect" # Send back to fix it
+    # Check specifically for validation feedback keywords in assistant messages
+    retry_count = 0
+    for m in messages:
+        content = m.get("content", "") if isinstance(m, dict) else getattr(m, "content", "")
+        if "Validation Feedback" in content or "Validation Report" in content:
+            retry_count += 1
 
-    # 2. End of Plan: If no more steps, go to the Reporter or End
+    if not plan:
+        print("--- ROUTING: NO PLAN FOUND ---")
+        return END
+
+    if eval_score < 7:
+        if retry_count < 2: 
+            print(f"--- SELF-HEALING: Score {eval_score}/10. Attempt {retry_count + 1}. Routing to Architect... ---")
+            return "architect"
+        else:
+            print(f"--- LOOP PREVENTION: Max retries ({retry_count}) hit. Forcing Exit. ---")
+            return END
+
     if step_idx >= len(plan.steps):
-        print("--- ROUTING: PLAN COMPLETE ---")
-        return "__end__"
+        print("--- ROUTING: ALL STEPS EXECUTED ---")
+        return END
 
-    # 3. Dynamic Routing: Look at the next step's role in the plan
+    # 5. DYNAMIC ROLE ROUTING
     next_step = plan.steps[step_idx]
-    role = next_step.agent_role
+    role = next_step.agent_role.lower()
 
-    if role == "Research":
+    print(f"--- ROUTING: Current Step {step_idx + 1}/{len(plan.steps)}, Role: {role} ---")
+
+    if "research" in role:
         return "researcher"
-    elif role in ["Design", "Execution", "Validation"]:
+    
+    if any(r in role for r in ["architect", "design", "execution", "structure"]):
         return "architect"
-    elif role == "Validation":
+    
+    if "validation" in role or "validator" in role:
         return "validator"
     
-    return "__end__"
+    # Fallback to END if role is unknown to prevent infinite hanging
+    print(f"--- ROUTING: Unknown role '{role}', terminating gracefully. ---")
+    return END
