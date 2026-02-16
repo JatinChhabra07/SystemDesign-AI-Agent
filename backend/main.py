@@ -3,15 +3,32 @@ from pydantic import BaseModel
 from typing import List
 from langchain_core.messages import HumanMessage
 import uvicorn
-from src.utils.vector_store import ingest_docs
+# from src.utils.vector_store import ingest_docs
 import shutil
 import os
 import traceback
 from contextlib import asynccontextmanager
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from src.core.graph import workflow
+# from src.core.graph import workflow
 from fastapi.middleware.cors import CORSMiddleware
 
+import sys
+import traceback
+
+print("MAIN.PY STARTED - PID:", os.getpid())
+print("Python version:", sys.version)
+print("Current working dir:", os.getcwd())
+print("PYTHONPATH:", os.environ.get("PYTHONPATH"))
+
+try:
+    from src.utils.vector_store import ingest_docs
+    from src.core.graph import workflow
+    print("IMPORTS SUCCESSFUL")
+except Exception as e:
+    print("!!! CRITICAL IMPORT ERROR !!!")
+    traceback.print_exc()
+    sys.exit(1)
+    raise
 
 os.makedirs("data", exist_ok=True)
 
@@ -39,7 +56,7 @@ async def lifespan(app: FastAPI):
         if _saver_context:
             await _saver_context.__aexit__(None, None, None)
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -168,5 +185,6 @@ async def generate_design(request: QueryRequest):
     
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
+    print(f"Starting uvicorn on 0.0.0.0:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
         
