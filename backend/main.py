@@ -15,21 +15,31 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
-# Global variables to hold the app and the context manager
+os.makedirs("data", exist_ok=True)
+
 agent_app = None
 _saver_context = None
-
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global agent_app, _saver_context
-    _saver_context = AsyncSqliteSaver.from_conn_string("data/checkpoints.sqlite")
-    memory = await _saver_context.__aenter__() 
-    
-    agent_app = workflow.compile(checkpointer=memory)
-    yield
-    await _saver_context.__aexit__(None, None, None)
+    try:
+        print("DEBUG: Initializing SQLite Saver...")
+        # Absolute path use karna best hai cloud par
+        db_path = os.path.join(os.getcwd(), "data", "checkpoints.sqlite")
+        _saver_context = AsyncSqliteSaver.from_conn_string(db_path)
+        memory = await _saver_context.__aenter__() 
+        
+        print("DEBUG: Compiling Workflow...")
+        agent_app = workflow.compile(checkpointer=memory)
+        print("DEBUG: Backend is ready to receive requests!")
+        yield
+    except Exception as e:
+        print(f"CRITICAL LIFESPAN ERROR: {str(e)}")
+        traceback.print_exc()
+    finally:
+        if _saver_context:
+            await _saver_context.__aexit__(None, None, None)
 
 app = FastAPI(lifespan=lifespan)
 
@@ -40,6 +50,10 @@ app.add_middleware(
     allow_methods=["*"], 
     allow_headers=["*"], 
 )
+
+@app.get("/")
+async def health_check():
+    return {"status": "healthy", "model": "AI Agent Backend"}
 
 
 @app.post("/ingest")

@@ -1,6 +1,7 @@
 langgraph 
 fastapi 
 uvicorn 
+gunicorn
 python-dotenv
 tavily-python
 streamlit
