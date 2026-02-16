@@ -14,7 +14,8 @@ from src.core.graph import workflow
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-
+db_path = os.path.join(os.getcwd(), "data", "checkpoints.sqlite")
+# os.makedirs pehle se hi ensure kar lega ki folder hai
 os.makedirs("data", exist_ok=True)
 
 agent_app = None
