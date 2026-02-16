@@ -12,11 +12,13 @@ from contextlib import asynccontextmanager
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from src.core.graph import workflow
 from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 
 # Global variables to hold the app and the context manager
 agent_app = None
 _saver_context = None
+
 
 
 @asynccontextmanager
@@ -30,6 +32,14 @@ async def lifespan(app: FastAPI):
     await _saver_context.__aexit__(None, None, None)
 
 app = FastAPI(lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 
 
 @app.post("/ingest")
