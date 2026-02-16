@@ -12,8 +12,8 @@ if "messages" not in st.session_state:
 
 # Page Config
 st.set_page_config(
-    page_title="SystemDesign-Pro AI",
-    page_icon="🏗️",
+    page_title="Systemly.AI",
+    page_icon="🚀",
     layout="wide"
 )
 
@@ -112,7 +112,7 @@ with st.sidebar:
 
 
 
-st.title("🏗️ SystemDesign-Pro: Agentic Architect")
+st.title("Systemly AI — Intelligent Agents for System Architecture Design")
 
 st.markdown(
     "Enter your app idea, and my multi-agent team will design it."
